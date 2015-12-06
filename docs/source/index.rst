@@ -42,3 +42,4 @@ Documentation Contents
    :maxdepth: 2
 
    features
+   api
