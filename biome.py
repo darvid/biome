@@ -12,6 +12,9 @@ import sys
 import orderedattrdict
 
 
+__all__ = ("EnvironmentError", "Habitat")
+
+
 class EnvironmentError(KeyError):
     """Raised when something went wrong accessing the environment.
 
@@ -226,8 +229,6 @@ class _Biome(orderedattrdict.DefaultAttrDict):
 
     def __init__(self):
         super(_Biome, self).__init__(Habitat)
-        object.__setattr__(self, "__file__", __file__)
-        object.__setattr__(self, "__name__", __name__)
 
     def __missing__(self, key):
         prefix = key.upper().rstrip("_")
@@ -239,3 +240,7 @@ class _Biome(orderedattrdict.DefaultAttrDict):
 # See http://stackoverflow.com/a/5365733/211772
 _module_ref = sys.modules[__name__]
 sys.modules[__name__] = _Biome()
+for prop in ("file", "name"):
+    object.__setattr__(sys.modules[__name__], "__%s__" % prop,
+                       locals()["__%s__" % prop])
+sys.modules["%s._lib" % __name__] = _module_ref
