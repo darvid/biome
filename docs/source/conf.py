@@ -127,6 +127,7 @@ html_theme_options = {
     "logo": "logo.png",
     "github_user": "darvid",
     "github_repo": "biome",
+    "travis_button": True,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
