@@ -125,6 +125,8 @@ html_theme = "alabaster"
 # documentation.
 html_theme_options = {
     "logo": "logo.png",
+    "github_user": "darvid",
+    "github_repo": "biome",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
