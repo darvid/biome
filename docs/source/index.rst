@@ -35,11 +35,11 @@ values through either attributes or items, whichever you prefer.
 .. _best practice:
    http://12factor.net/config
 
-
-Documentation Contents
-----------------------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :hidden:
 
    features
+   usage
+   install
    api
