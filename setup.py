@@ -27,6 +27,8 @@ setup(
     license="BSD",
     author="David Gidwani",
     author_email="david.gidwani@gmail.com",
+    url="https://github.com/darvid/biome",
+    download_url="https://github.com/darvid/biome/tarball/0.1",
     keywords="conf config configuration environment",
     py_modules=["biome"],
     install_requires=install_requires,
