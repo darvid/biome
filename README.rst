@@ -7,10 +7,10 @@ biome
 .. image:: https://img.shields.io/pypi/v/biome.svg
     :target: https://pypi.python.org/pypi/biome/
 
-.. image:: https://img.shields.io/pypi/implementation/biome.svg
+.. image:: https://img.shields.io/pypi/pyversions/biome.svg
     :target: https://pypi.python.org/pypi/biome/
 
-.. image:: https://img.shields.io/pypi/pyversions/biome.svg
+.. image:: https://img.shields.io/pypi/status/biome.svg
     :target: https://pypi.python.org/pypi/biome/
 
 Provides painless access to namespaced environment variables.
