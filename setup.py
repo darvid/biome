@@ -15,7 +15,7 @@ import sys
 from setuptools import setup
 
 
-install_requires = ["orderedattrdict"]
+install_requires = ["attrdict"]
 if sys.version_info[:2] < (3, 4):
     install_requires.append("pathlib")
 

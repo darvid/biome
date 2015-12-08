@@ -9,10 +9,14 @@ import os
 import pathlib
 import sys
 
-import orderedattrdict
+import attrdict
 
 
 __all__ = ("EnvironmentError", "Habitat")
+
+
+def _sanitize_prefix(prefix):
+    return prefix.upper().rstrip("_")
 
 
 class EnvironmentError(KeyError):
@@ -29,7 +33,7 @@ class EnvironmentError(KeyError):
                    (prefix, name.upper()))
 
 
-class Habitat(orderedattrdict.AttrDict):
+class Habitat(attrdict.AttrDict):
     """Provides attribute/map style access to a set of namespaced
     environment variables.
 
@@ -43,7 +47,7 @@ class Habitat(orderedattrdict.AttrDict):
     """
 
     def __init__(self, prefix):
-        object.__setattr__(self, "_prefix", prefix.upper().rstrip("_"))
+        object.__setattr__(self, "_prefix", _sanitize_prefix(prefix))
         super(Habitat, self).__init__(self.get_environ(self._prefix))
 
     @classmethod
@@ -221,20 +225,23 @@ class Habitat(orderedattrdict.AttrDict):
             return value
 
     def __repr__(self):
-        return "<Habitat(%r, %r)>" % (
+        return u"<Habitat(%r, %r)>" % (
             self._prefix, list(dict.items(self)))
 
 
-class _Biome(orderedattrdict.DefaultAttrDict):
+class _Biome(attrdict.AttrDict):
+    def __getattr__(self, name):
+        try:
+            return super(_Biome, self).__getattr__(name)
+        except AttributeError:
+            name = _sanitize_prefix(name)
+            if name not in self and not name.startswith("_"):
+                self[name] = Habitat(name)
+                return self[name]
+            raise
 
-    def __init__(self):
-        super(_Biome, self).__init__(Habitat)
-
-    def __missing__(self, key):
-        prefix = key.upper().rstrip("_")
-        self[key] = self.default_factory(prefix)
-        return self[key]
-
+    def __repr__(self):
+        return u"<Biome(%s)>" % dict.__repr__(self)
 
 # Create a reference to the module so it doesn't get deleted
 # See http://stackoverflow.com/a/5365733/211772

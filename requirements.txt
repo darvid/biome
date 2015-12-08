@@ -4,4 +4,4 @@
 #
 #    pip-compile requirements.in
 #
-orderedattrdict==1.4.1
+attrdict==2.0.0
