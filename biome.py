@@ -15,6 +15,11 @@ import attrdict
 __all__ = ("EnvironmentError", "Habitat")
 
 
+# Create a reference to the module so it doesn't get deleted
+# See http://stackoverflow.com/a/5365733/211772
+_module_ref = sys.modules[__name__]
+
+
 def _sanitize_prefix(prefix):
     return prefix.upper().rstrip("_")
 
@@ -47,7 +52,7 @@ class Habitat(attrdict.AttrDict):
     """
 
     def __init__(self, prefix):
-        object.__setattr__(self, "_prefix", _sanitize_prefix(prefix))
+        self._setattr("_prefix", _sanitize_prefix(prefix))
         super(Habitat, self).__init__(self.get_environ(self._prefix))
 
     @classmethod
@@ -203,15 +208,18 @@ class Habitat(attrdict.AttrDict):
         return super(Habitat, self).__contains__(name.upper())
 
     def __getitem__(self, name):
+        name = name.upper()
+        if name.startswith("_"):
+            return super(Habitat, self).__getitem__(name)
         try:
-            value = super(Habitat, self).__getitem__(name.upper())
+            value = super(Habitat, self).__getitem__(name)
         except KeyError:
             raise EnvironmentError.not_found(self._prefix, name)
         try:
             # Attempt to parse value as a Python literal
             if value.lower() in ("true", "false"):
                 value = value.title()
-            return ast.literal_eval(value)
+            value = ast.literal_eval(value)
         except (SyntaxError, ValueError):
             name_upper = name.upper()
             # Return a ``pathlib.Path`` object iff:
@@ -221,31 +229,35 @@ class Habitat(attrdict.AttrDict):
                     "PATH" in name_upper or
                     "DIR" in name_upper or
                     "FILE" in name_upper):
-                return pathlib.Path(value)
-            return value
+                value = pathlib.Path(value)
+        return value
 
     def __repr__(self):
-        return u"<Habitat(%r, %r)>" % (
-            self._prefix, list(dict.items(self)))
+        return u"<%s(%r, %r)>" % (
+            self.__class__.__name__,
+            self._prefix,
+            dict.__repr__(self)
+        )
 
 
 class _Biome(attrdict.AttrDict):
     def __getattr__(self, name):
+        if name == "_lib":
+            return _module_ref
         try:
-            return super(_Biome, self).__getattr__(name)
-        except AttributeError:
+            return self[name.upper()]
+        except KeyError:
+            if name.startswith("_"):
+                raise
             name = _sanitize_prefix(name)
             if name not in self and not name.startswith("_"):
-                self[name] = Habitat(name)
-                return self[name]
-            raise
+                self[name] = _module_ref.Habitat(name)
+            return self[name]
 
     def __repr__(self):
-        return u"<Biome(%s)>" % dict.__repr__(self)
+        return u"<%s(%s)>" % (self.__class__.__name__, dict.__repr__(self))
 
-# Create a reference to the module so it doesn't get deleted
-# See http://stackoverflow.com/a/5365733/211772
-_module_ref = sys.modules[__name__]
+
 sys.modules[__name__] = _Biome()
 for prop in ("file", "name"):
     object.__setattr__(sys.modules[__name__], "__%s__" % prop,

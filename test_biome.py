@@ -36,10 +36,10 @@ def setup_module(module):
 
 def test_access_case_sensitivity():
     expected_host = os.environ["YOURAPP_HOST"]
-    assert (biome.YOURAPP.HOST == expected_host and
-            biome.YOURAPP.host == expected_host and
-            biome.yourapp.HOST == expected_host and
-            biome.yourapp.host == expected_host)
+    assert biome.YOURAPP.HOST == expected_host
+    assert biome.YOURAPP.host == expected_host
+    assert biome.yourapp.HOST == expected_host
+    assert biome.yourapp.host == expected_host
 
 
 def test_access_defaults():
@@ -52,9 +52,8 @@ def test_access_defaults():
 
 def test_access_missing():
     for getter in ("get", "get_bool", "get_int", "get_path"):
-        with pytest.raises(KeyError) as excinfo:
+        with pytest.raises(biome._lib.EnvironmentError):
             getattr(biome.YOURAPP, getter)("foo")
-        assert "EnvironmentError" in str(excinfo)
 
 
 def test_access_trailing_underscore():
@@ -62,6 +61,8 @@ def test_access_trailing_underscore():
 
 
 def test_explicit_access_literals():
+    print(biome.YOURAPP.get("host"))
+    print(biome.YOURAPP["host"])
     assert biome.YOURAPP.get("host") == biome.YOURAPP["host"]
 
     assert biome.YOURAPP.get_int("port") == int(os.environ["YOURAPP_PORT"])
