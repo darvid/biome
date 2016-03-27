@@ -1,18 +1,18 @@
 #!/usr/bin/env python
-"""
-    biome
-    ~~~~~
-    Provides painless access to namespaced environment variables.
+"""Provides painless access to namespaced environment variables.
 
-    Links
-    -----
+Links
+-----
 
-    * `Source code <http://github.com/darvid/biome>`_
-    * `Documentation <http://biome.readthedocs.org>`_
+* `Source code <http://github.com/darvid/biome>`_
+* `Documentation <http://biome.readthedocs.org>`_
+
 """
 import sys
 
-from setuptools import setup
+import setuptools
+
+import versioneer
 
 
 install_requires = ["attrdict"]
@@ -20,9 +20,10 @@ if sys.version_info[:2] < (3, 4):
     install_requires.append("pathlib")
 
 
-setup(
+setuptools.setup(
     name="biome",
-    version="0.1",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     description="Painless access to namespaced environment variables",
     license="BSD",
     author="David Gidwani",

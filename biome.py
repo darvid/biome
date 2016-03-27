@@ -1,9 +1,4 @@
-"""
-    biome
-    ~~~~~
-
-    Provides painless access to namespaced environment variables.
-"""
+"""Provides painless access to namespaced environment variables."""
 import ast
 import os
 import pathlib
@@ -51,6 +46,11 @@ class Habitat(attrdict.AttrDict):
 
     """
 
+    def __new__(cls, prefix):
+        if isinstance(prefix, attrdict.AttrDict):
+            return prefix
+        return super(Habitat, cls).__new__(cls, prefix)
+
     def __init__(self, prefix):
         self._setattr("_prefix", _sanitize_prefix(prefix))
         super(Habitat, self).__init__(self.get_environ(self._prefix))
@@ -70,18 +70,6 @@ class Habitat(attrdict.AttrDict):
         return ((key[len(prefix) + 1:], value)
                 for key, value in os.environ.items()
                 if key.startswith("%s_" % prefix))
-
-    def get_prefixed_name(self, name):
-        """Builds an environment variable name.
-
-        Args:
-            name (str): The case-insensitive, unprefixed variable name.
-
-        Returns:
-            str: The full environment variable name, including prefix.
-
-        """
-        return "%s_%s" % (self._prefix, name.upper())
 
     def get(self, name, default=None):
         """A more explicit alternative to attribute or item access.
@@ -134,13 +122,29 @@ class Habitat(attrdict.AttrDict):
             if default is not None:
                 return default
             raise EnvironmentError.not_found(self._prefix, name)
-        try:
-            return bool(self.get_int(name))
-        except ValueError:
-            value = self[name].lower()
-            if value not in ("true", "false"):
-                raise ValueError("cannot interpret %r as boolean" % self[name])
-            return value == "true"
+        return bool(self.get_int(name))
+
+    def get_dict(self, name, default=None):
+        """Retrieves an environment variable value as a dictionary.
+
+        Args:
+            name (str): The case-insensitive, unprefixed variable name.
+            default: If provided, a default value will be returned
+                instead of throwing ``EnvironmentError``.
+
+        Returns:
+            dict: The environment variable's value as a ``dict``.
+
+        Raises:
+            EnvironmentError: If the environment variable does not
+                exist, and ``default`` was not provided.
+
+        """
+        if name not in self:
+            if default is not None:
+                return default
+            raise EnvironmentError.not_found(self._prefix, name)
+        return dict(**self.get(name))
 
     def get_int(self, name, default=None):
         """Retrieves an environment variable as an integer.
@@ -165,6 +169,34 @@ class Habitat(attrdict.AttrDict):
                 return default
             raise EnvironmentError.not_found(self._prefix, name)
         return int(self[name])
+
+    def get_list(self, name, default=None):
+        """Retrieves an environment variable as a list.
+
+        Note that while implicit access of environment variables
+        containing tuples will return tuples, using this method will
+        coerce tuples to lists.
+
+        Args:
+            name (str): The case-insensitive, unprefixed variable name.
+            default: If provided, a default value will be returned
+                instead of throwing ``EnvironmentError``.
+
+        Returns:
+            list: The environment variable's value as a list.
+
+        Raises:
+            EnvironmentError: If the environment variable does not
+                exist, and ``default`` was not provided.
+            ValueError: If the environment variable value is not an
+                integer with base 10.
+
+        """
+        if name not in self:
+            if default is not None:
+                return default
+            raise EnvironmentError.not_found(self._prefix, name)
+        return list(self[name])
 
     def get_path(self, name, default=None):
         """Retrieves an environment variable as a ``pathlib.Path``
@@ -209,8 +241,6 @@ class Habitat(attrdict.AttrDict):
 
     def __getitem__(self, name):
         name = name.upper()
-        if name.startswith("_"):
-            return super(Habitat, self).__getitem__(name)
         try:
             value = super(Habitat, self).__getitem__(name)
         except KeyError:
@@ -220,6 +250,8 @@ class Habitat(attrdict.AttrDict):
             if value.lower() in ("true", "false"):
                 value = value.title()
             value = ast.literal_eval(value)
+            if isinstance(value, dict):
+                return attrdict.AttrDict(**value)
         except (SyntaxError, ValueError):
             name_upper = name.upper()
             # Return a ``pathlib.Path`` object iff:
@@ -232,15 +264,13 @@ class Habitat(attrdict.AttrDict):
                 value = pathlib.Path(value)
         return value
 
-    def __repr__(self):
-        return u"<%s(%r, %r)>" % (
-            self.__class__.__name__,
-            self._prefix,
-            dict.__repr__(self)
-        )
+    def __repr__(self):  # pragma: no cover
+        return u"<{}({!r})>".format(self.__class__.__name__, self._prefix)
 
 
-class _Biome(attrdict.AttrDict):
+class Biome(attrdict.AttrDict):
+    """Provides utilities for accessing environment variables."""
+
     def __getattr__(self, name):
         if name == "_lib":
             return _module_ref
@@ -254,11 +284,13 @@ class _Biome(attrdict.AttrDict):
                 self[name] = _module_ref.Habitat(name)
             return self[name]
 
-    def __repr__(self):
-        return u"<%s(%s)>" % (self.__class__.__name__, dict.__repr__(self))
+    def __repr__(self):  # pragma: no cover
+        return "<{}({!r})>".format(
+            self.__class__.__name__,
+            dict.__repr__(self))
 
 
-sys.modules[__name__] = _Biome()
+sys.modules[__name__] = Biome()
 for prop in ("file", "name"):
     object.__setattr__(sys.modules[__name__], "__%s__" % prop,
                        locals()["__%s__" % prop])
